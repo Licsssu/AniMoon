@@ -64,8 +64,8 @@
             background: #1e1e1e;
             padding: 20px;
             border-radius: 10px;
-            width: 80%;
-            max-width: 800px;
+            width: 85%;
+            max-width: 900px;
             position: relative;
         }
         .close-btn {
@@ -76,12 +76,13 @@
             cursor: pointer;
             color: #ff6b6b;
         }
-        video {
+        /* Стили для iframe плеера */
+        iframe {
             width: 100%;
-            max-height: 450px;
+            height: 500px;
+            border: none;
             border-radius: 6px;
             margin-top: 15px;
-            outline: none;
         }
     </style>
 </head>
@@ -92,23 +93,21 @@
     
     <div id="anime-container">Загрузка данных...</div>
 
-    <!-- Модальное окно с HTML5 плеером -->
+    <!-- Модальное окно с iframe плеером -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
             
-            <!-- Встроенный HTML5 плеер -->
-            <video id="anime-player" controls>
-                <source src="" type="video/mp4">
-                Ваш браузер не поддерживает видео.
-            </video>
+            <!-- Сюда подгружается плеер сторонней базы (например, Kodik) -->
+            <iframe id="anime-player" src="" allowfullscreen></iframe>
         </div>
     </div>
 
     <script>
         async function loadAnime() {
             try {
+                // Загружаем аниме вместе с их уникальными ID на Shikimori
                 const response = await fetch('https://shikimori.me/api/animes?limit=12');
                 const data = await response.json();
                 
@@ -125,10 +124,8 @@
                     `;
                     
                     card.addEventListener('click', () => {
-                        // Здесь можно указать прямую ссылку на видеофайл для каждого аниме
-                        // Для примера используется тестовое публичное видео
-                        const sampleVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-                        openPlayer(anime.russian || anime.name, sampleVideoUrl);
+                        // Используем ID аниме для формирования ссылки на плеер (например, через интеграцию с Kodik по shikimori_id)
+                        openPlayer(anime.russian || anime.name, anime.id);
                     });
 
                     container.appendChild(card);
@@ -138,20 +135,25 @@
             }
         }
 
-        function openPlayer(title, videoUrl) {
+        function openPlayer(title, animeId) {
             document.getElementById('modal-title').innerText = title;
             
             const player = document.getElementById('anime-player');
-            player.src = videoUrl;
-            player.load();
+            
+            // Пример формирования ссылки для плеера по Shikimori ID. 
+            // Некоторые сервисы (например, Kodik) поддерживают поиск/трансляцию по shikimori_id:
+            // player.src = `https://kodik.info/find-or-create?shikimoriID=${animeId}`;
+            
+            // Пока используем демонстрационный iframe-плеер, чтобы код сразу работал:
+            player.src = `https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1`;
             
             document.getElementById('player-modal').style.display = 'flex';
         }
 
         function closePlayer() {
             const player = document.getElementById('anime-player');
-            player.pause();
-            player.src = "";
+            // Очищаем src при закрытии, чтобы видео перестало играть в фоне
+            player.src = ""; 
             
             document.getElementById('player-modal').style.display = 'none';
         }
