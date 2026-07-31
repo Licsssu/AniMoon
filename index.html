@@ -1,43 +1,285 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Тест плеера</title>
-    <!-- Видео.js -->
-    <link href="https://vjs.zencdn.net/8.23.3/video-js.css" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Аниме-каталог с плеером</title>
+    <!-- Стили Video.js -->
+    <link href="https://vjs.zencdn.net/8.23.3/video-js.css" rel="stylesheet" />
     <style>
-        body { background: #121212; color: white; text-align: center; padding: 20px; }
-        button { padding: 12px 24px; font-size: 18px; cursor: pointer; }
-        .video-container { max-width: 800px; margin: 20px auto; }
+        /* --- Общие стили --- */
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { color: #ff6b6b; }
+        .sub { color: #aaa; margin-bottom: 30px; }
+
+        /* --- Сетка карточек --- */
+        #anime-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .anime-card {
+            background: #1e1e1e;
+            border-radius: 10px;
+            width: 200px;
+            padding: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .anime-card:hover {
+            transform: scale(1.04);
+            box-shadow: 0 6px 15px rgba(255,107,107,0.3);
+        }
+        .anime-card img {
+            width: 100%;
+            border-radius: 6px;
+            height: 280px;
+            object-fit: cover;
+            background: #333;
+        }
+        .anime-card h3 {
+            font-size: 16px;
+            margin: 10px 0 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .anime-card p {
+            font-size: 14px;
+            color: #aaa;
+            margin: 0;
+        }
+
+        /* --- Модальное окно --- */
+        #player-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            padding: 20px 25px 25px;
+            border-radius: 12px;
+            width: 92%;
+            max-width: 960px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .close-btn {
+            position: absolute;
+            top: 8px; right: 18px;
+            font-size: 32px;
+            cursor: pointer;
+            color: #ff6b6b;
+            transition: 0.2s;
+            line-height: 1;
+        }
+        .close-btn:hover { color: #fff; }
+        #modal-title {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 22px;
+            color: #ff6b6b;
+            text-align: left;
+        }
+        /* Видео-плеер */
+        #anime-player {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 8px;
+        }
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 40px;
+        }
     </style>
 </head>
 <body>
-    <h1>🎬 Тест плеера</h1>
-    <button onclick="openVideo()">Открыть видео</button>
 
-    <div id="playerContainer" style="display:none;" class="video-container">
-        <video id="myVideo" class="video-js vjs-default-skin" controls
-               data-setup='{"fluid": true, "controls": true}'>
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-        </video>
+    <h1>🍿 Аниме-каталог</h1>
+    <p class="sub">Нажмите на карточку, чтобы открыть плеер с демо-видео</p>
+
+    <div id="anime-container"></div>
+
+    <!-- Модальное окно -->
+    <div id="player-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePlayer()">&times;</span>
+            <h2 id="modal-title">Название аниме</h2>
+            <video id="anime-player" class="video-js vjs-default-skin" controls
+                   poster="" data-setup='{"fluid": true, "controls": true, "autoplay": false}'>
+                <source src="" type="video/mp4" />
+                <p class="vjs-no-js">Для просмотра видео включите JavaScript.</p>
+            </video>
+        </div>
     </div>
 
+    <!-- Подключаем Video.js -->
     <script src="https://vjs.zencdn.net/8.23.3/video.min.js"></script>
+
     <script>
+        // ---- ВСТРОЕННЫЙ КАТАЛОГ АНИМЕ (без внешних запросов) ----
+        const animeList = [
+            {
+                id: 1,
+                title: "Атака Титанов",
+                year: 2013,
+                poster: "https://shikimori.one/system/animes/original/16498.jpg?1708463581"
+            },
+            {
+                id: 2,
+                title: "Наруто",
+                year: 2002,
+                poster: "https://shikimori.one/system/animes/original/20.jpg?1708463257"
+            },
+            {
+                id: 3,
+                title: "Ван Пис",
+                year: 1999,
+                poster: "https://shikimori.one/system/animes/original/21.jpg?1708463259"
+            },
+            {
+                id: 4,
+                title: "Тетрадь смерти",
+                year: 2006,
+                poster: "https://shikimori.one/system/animes/original/1535.jpg?1708463500"
+            },
+            {
+                id: 5,
+                title: "Клинок, рассекающий демонов",
+                year: 2019,
+                poster: "https://shikimori.one/system/animes/original/38000.jpg?1708463926"
+            },
+            {
+                id: 6,
+                title: "Токийский гуль",
+                year: 2014,
+                poster: "https://shikimori.one/system/animes/original/22319.jpg?1708463626"
+            },
+            {
+                id: 7,
+                title: "Магическая битва",
+                year: 2020,
+                poster: "https://shikimori.one/system/animes/original/40748.jpg?1708463974"
+            },
+            {
+                id: 8,
+                title: "Восхождение героя щита",
+                year: 2019,
+                poster: "https://shikimori.one/system/animes/original/35790.jpg?1708463868"
+            },
+            {
+                id: 9,
+                title: "Реинкарнация безработного",
+                year: 2021,
+                poster: "https://shikimori.one/system/animes/original/39535.jpg?1708463948"
+            },
+            {
+                id: 10,
+                title: "Клинок, рассекающий демонов – Поезд Бесконечный",
+                year: 2020,
+                poster: "https://shikimori.one/system/animes/original/41587.jpg?1708463994"
+            },
+            {
+                id: 11,
+                title: "Моя геройская академия",
+                year: 2016,
+                poster: "https://shikimori.one/system/animes/original/31964.jpg?1708463725"
+            },
+            {
+                id: 12,
+                title: "Стальной алхимик: Братство",
+                year: 2009,
+                poster: "https://shikimori.one/system/animes/original/5114.jpg?1708463404"
+            }
+        ];
+
+        // ---- Отрисовка карточек ----
+        const container = document.getElementById('anime-container');
+        animeList.forEach(anime => {
+            const card = document.createElement('div');
+            card.className = 'anime-card';
+            card.innerHTML = `
+                <img src="${anime.poster}" alt="${anime.title}" loading="lazy" />
+                <h3>${anime.title}</h3>
+                <p>Год: ${anime.year}</p>
+            `;
+            card.addEventListener('click', () => {
+                // Вместо реального видео используем общедоступный тестовый ролик
+                const videoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+                openPlayer(anime.title, videoUrl, anime.poster);
+            });
+            container.appendChild(card);
+        });
+
+        // ---- Плеер (глобальная переменная) ----
         let player = null;
 
-        function openVideo() {
-            const container = document.getElementById('playerContainer');
-            container.style.display = 'block';
+        function openPlayer(title, videoUrl, posterUrl) {
+            document.getElementById('modal-title').innerText = title;
+            const videoElement = document.getElementById('anime-player');
 
-            if (!player) {
-                player = videojs('myVideo', {
-                    fluid: true,
-                    controls: true,
-                    autoplay: true
-                });
+            // Уничтожаем старый плеер, если есть
+            if (player) {
+                player.dispose();
+                player = null;
             }
+
+            // Устанавливаем постер и источник
+            videoElement.poster = posterUrl || '';
+            const source = videoElement.querySelector('source');
+            source.src = videoUrl;
+
+            // Создаём новый плеер
+            player = videojs(videoElement, {
+                fluid: true,
+                controls: true,
+                autoplay: false,
+                techOrder: ['html5']
+            });
+
+            document.getElementById('player-modal').style.display = 'flex';
         }
+
+        function closePlayer() {
+            if (player) {
+                player.pause();
+                player.dispose();
+                player = null;
+            }
+            const videoElement = document.getElementById('anime-player');
+            const source = videoElement.querySelector('source');
+            source.src = '';
+            videoElement.poster = '';
+            document.getElementById('player-modal').style.display = 'none';
+        }
+
+        // Закрытие по клику на фон (необязательно)
+        document.getElementById('player-modal').addEventListener('click', function(e) {
+            if (e.target === this) closePlayer();
+        });
     </script>
+
 </body>
 </html>
