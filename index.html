@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой аниме-сайт (Anilibria)</title>
+    <title>Мой аниме-сайт (Collapse)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -76,21 +76,21 @@
             margin-top: 15px;
             background: #000;
         }
+        .error-msg { color: #ff6b6b; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>Мои любимые релизы (Anilibria)</h1>
+    <h1>Мой аниме-каталог (Collapse Player)</h1>
     <p>Нажмите на карточку аниме, чтобы открыть плеер</p>
     
-    <div id="anime-container">Загрузка данных с Анилибрии...</div>
+    <div id="anime-container">Загрузка данных с Shikimori...</div>
 
-    <!-- Модальное окно с плеером Анилибрии -->
+    <!-- Модальное окно плеера -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
-            <!-- Сюда подгрузится реальный плеер -->
             <iframe id="anime-player" src="" allowfullscreen></iframe>
         </div>
     </div>
@@ -98,29 +98,27 @@
     <script>
         async function loadAnime() {
             try {
-                // Запрашиваем 12 последних обновленных тайтлов с Анилибрии
-                const response = await fetch('https://api.anilibria.tv/v3/title/updates?limit=12');
-                const data = await response.json();
-                const animeList = data.list; 
+                // Пытаемся получить список аниме с Шикимори
+                const response = await fetch('https://shikimori.me/api/animes?limit=12&order=popularity');
                 
+                if (!response.ok) throw new Error('Shikimori заблокировал запрос');
+                
+                const data = await response.json();
                 const container = document.getElementById('anime-container');
                 container.innerHTML = ''; 
                 
-                animeList.forEach(anime => {
+                data.forEach(anime => {
                     const card = document.createElement('div');
                     card.className = 'anime-card';
-                    
-                    // Анилибрия отдает неполную ссылку на картинку, собираем ее:
-                    const posterUrl = `https://anilibria.tv${anime.posters.original.url}`;
-                    
                     card.innerHTML = `
-                        <img src="${posterUrl}" alt="${anime.names.ru}">
-                        <h3>${anime.names.ru}</h3>
+                        <img src="https://shikimori.me${anime.image.original}" alt="${anime.russian}">
+                        <h3>${anime.russian || anime.name}</h3>
+                        <p>Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
                     `;
                     
                     card.addEventListener('click', () => {
-                        // Передаем название и уникальный ID аниме для плеера
-                        openPlayer(anime.names.ru, anime.id);
+                        // Передаем в плеер название и уникальный ID Шикимори
+                        openPlayer(anime.russian || anime.name, anime.id);
                     });
 
                     container.appendChild(card);
@@ -128,23 +126,27 @@
             } catch (error) {
                 console.error('Ошибка:', error);
                 document.getElementById('anime-container').innerHTML = 
-                    '<p style="color:#ff6b6b;">Ошибка загрузки. Включи VPN, возможно провайдер блокирует Анилибрию!</p>';
+                    `<p class="error-msg">Ошибка загрузки каталога! <br><br> 
+                    Скорее всего, твой AdBlock, uBlock или встроенная защита браузера блокирует доступ к shikimori.me. <br> 
+                    Отключи блокировщик для этого сайта и обнови страницу.</p>`;
             }
         }
 
-        function openPlayer(title, animeId) {
+        function openPlayer(title, shikimoriId) {
             document.getElementById('modal-title').innerText = title;
             const player = document.getElementById('anime-player');
             
-            // Вставляем родной iframe-плеер Анилибрии
-            player.src = `https://anilibria.tv/public/iframe.php?id=${animeId}`;
+            // Вставляем ссылку на Collapse. 
+            // Обрати внимание: домены у плееров часто меняются из-за блокировок.
+            // Если этот домен отвалится в будущем, тебе просто нужно будет заменить "api.collapse.party" на их актуальный домен.
+            player.src = `https://api.collapse.party/embed/anime/${shikimoriId}`;
             
             document.getElementById('player-modal').style.display = 'flex';
         }
 
         function closePlayer() {
             const player = document.getElementById('anime-player');
-            player.src = ""; // Выключаем звук/видео при закрытии
+            player.src = ""; 
             document.getElementById('player-modal').style.display = 'none';
         }
 
