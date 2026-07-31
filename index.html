@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniMoon — Твой аниме каталог</title>
+    <title>Мой аниме-сайт с рабочим плеером</title>
+    <!-- Подключаем стили Video.js -->
+    <link href="https://vjs.zencdn.net/8.23.3/video-js.css" rel="stylesheet" />
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +15,7 @@
             padding: 20px;
             text-align: center;
         }
-        h1 { color: #8a2be2; } /* Фиолетовый цвет AniMoon */
+        h1 { color: #ff6b6b; }
         #anime-container {
             display: flex;
             flex-wrap: wrap;
@@ -44,6 +46,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        /* Модальное окно */
         #player-modal {
             display: none;
             position: fixed;
@@ -57,94 +60,163 @@
             background: #1e1e1e;
             padding: 20px;
             border-radius: 10px;
-            width: 85%;
-            max-width: 900px;
+            width: 90%;
+            max-width: 960px;
             position: relative;
         }
         .close-btn {
             position: absolute;
             top: 10px; right: 15px;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             color: #ff6b6b;
+            z-index: 10;
         }
-        iframe {
+        .close-btn:hover {
+            color: #fff;
+        }
+        /* Видео-плеер занимает всю ширину */
+        #anime-player {
             width: 100%;
-            height: 500px;
-            border: none;
-            border-radius: 6px;
-            margin-top: 15px;
+            height: auto;
+            aspect-ratio: 16 / 9; /* сохраняем пропорции */
             background: #000;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        /* Сообщение о загрузке */
+        .loading {
+            color: #aaa;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
 
-    <h1>AniMoon 🌙</h1>
-    <p>Выбери аниме для просмотра</p>
+    <h1>🍿 Аниме-каталог</h1>
+    <p>Нажмите на карточку, чтобы открыть плеер (демо-видео)</p>
     
-    <div id="anime-container">Загрузка базы данных...</div>
+    <div id="anime-container" class="loading">Загрузка данных...</div>
 
-    <!-- Модальное окно плеера -->
+    <!-- Модальное окно с плеером -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
-            <!-- Плеер от Collapse -->
-            <iframe id="anime-player" src="" allowfullscreen></iframe>
+            <!-- Видео-элемент для Video.js -->
+            <video id="anime-player" class="video-js vjs-default-skin" controls
+                   poster="" data-setup='{"fluid": true, "controls": true, "autoplay": false}'>
+                <source src="" type="video/mp4">
+                <p class="vjs-no-js">Для просмотра видео включите JavaScript.</p>
+            </video>
         </div>
     </div>
 
+    <!-- Подключаем Video.js -->
+    <script src="https://vjs.zencdn.net/8.23.3/video.min.js"></script>
+
     <script>
-        // Загружаем каталог аниме (с обходом блокировок через прокси)
+        // --- Глобальная переменная для плеера ---
+        let player = null;
+
+        // --- Загрузка списка аниме с Shikimori через прокси ---
         async function loadAnime() {
             try {
                 const targetApiUrl = 'https://shikimori.one/api/animes?limit=12&order=popularity';
                 const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetApiUrl);
                 
                 const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Ошибка сети или прокси');
+                
                 const data = await response.json();
-                
                 const container = document.getElementById('anime-container');
-                container.innerHTML = ''; 
-                
+                container.innerHTML = '';
+                container.classList.remove('loading');
+
                 data.forEach(anime => {
                     const card = document.createElement('div');
                     card.className = 'anime-card';
+                    
+                    const title = anime.russian || anime.name;
+                    const posterUrl = 'https://shikimori.one' + anime.image.original;
+                    const year = anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д';
+
                     card.innerHTML = `
-                        <img src="https://shikimori.one${anime.image.original}" alt="${anime.russian}">
-                        <h3>${anime.russian || anime.name}</h3>
-                        <p style="color: gray; font-size: 14px;">Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
+                        <img src="${posterUrl}" alt="${title}" loading="lazy">
+                        <h3>${title}</h3>
+                        <p>Год: ${year}</p>
                     `;
                     
+                    // При клике открываем плеер с тестовым видео
                     card.addEventListener('click', () => {
-                        openPlayer(anime.russian || anime.name, anime.id);
+                        // Вместо реального видео используем бесплатный тестовый ролик
+                        // (вы можете заменить на свои ссылки, передавая их вторым параметром)
+                        const demoVideo = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
+                        openPlayer(title, demoVideo, posterUrl);
                     });
 
                     container.appendChild(card);
                 });
             } catch (error) {
-                console.error('Ошибка:', error);
-                document.getElementById('anime-container').innerHTML = '<p>Не удалось загрузить базу. Попробуй обновить страницу.</p>';
+                console.error('Ошибка загрузки:', error);
+                document.getElementById('anime-container').innerHTML = 
+                    `<p class="error-msg">❌ Не удалось загрузить каталог. Попробуйте обновить страницу.</p>`;
             }
         }
 
-        // Запуск плеера Collapse по клику
-        function openPlayer(title, shikimoriId) {
+        // --- Открытие плеера с указанным видео ---
+        function openPlayer(title, videoUrl, posterUrl) {
+            // Устанавливаем заголовок
             document.getElementById('modal-title').innerText = title;
-            const player = document.getElementById('anime-player');
+
+            // Находим видео-элемент
+            const videoElement = document.getElementById('anime-player');
             
-            // Вставляем ссылку Collapse, которая сразу ищет видео по ID Шикимори
-            player.src = `https://api.collapse.party/embed/anime/${shikimoriId}`;
-            
+            // Если плеер уже существует — уничтожаем его (чтобы пересоздать с новым источником)
+            if (player) {
+                player.dispose();
+                player = null;
+            }
+
+            // Устанавливаем постер (заставку) и источник
+            videoElement.poster = posterUrl || '';
+            const source = videoElement.querySelector('source');
+            source.src = videoUrl;
+
+            // Создаём новый плеер Video.js
+            player = videojs(videoElement, {
+                fluid: true,
+                controls: true,
+                autoplay: false,
+                techOrder: ['html5'] // используем только HTML5 (без Flash)
+            });
+
+            // Показываем модальное окно
             document.getElementById('player-modal').style.display = 'flex';
         }
 
+        // --- Закрытие плеера ---
         function closePlayer() {
-            document.getElementById('anime-player').src = ""; 
+            if (player) {
+                player.pause();      // останавливаем воспроизведение
+                player.dispose();    // полностью удаляем плеер
+                player = null;
+            }
+            // Очищаем источник, чтобы видео остановилось
+            const videoElement = document.getElementById('anime-player');
+            const source = videoElement.querySelector('source');
+            source.src = '';
+            videoElement.poster = '';
+            // Скрываем модалку
             document.getElementById('player-modal').style.display = 'none';
         }
 
+        // --- Запускаем загрузку каталога ---
         loadAnime();
     </script>
 
