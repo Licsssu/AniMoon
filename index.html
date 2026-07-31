@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniMoon (Collapse)</title>
+    <title>AniMoon — Твой аниме каталог</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +13,7 @@
             padding: 20px;
             text-align: center;
         }
-        h1 { color: #ff6b6b; }
+        h1 { color: #8a2be2; } /* Фиолетовый цвет AniMoon */
         #anime-container {
             display: flex;
             flex-wrap: wrap;
@@ -76,49 +76,45 @@
             margin-top: 15px;
             background: #000;
         }
-        .error-msg { color: #ff6b6b; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>Space Players (Collapse)</h1>
-    <p>Нажмите на карточку аниме, чтобы открыть плеер</p>
+    <h1>AniMoon 🌙</h1>
+    <p>Выбери аниме для просмотра</p>
     
-    <div id="anime-container">Загрузка данных каталога...</div>
+    <div id="anime-container">Загрузка базы данных...</div>
 
     <!-- Модальное окно плеера -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
+            <!-- Плеер от Collapse -->
             <iframe id="anime-player" src="" allowfullscreen></iframe>
         </div>
     </div>
 
     <script>
+        // Загружаем каталог аниме (с обходом блокировок через прокси)
         async function loadAnime() {
             try {
-                // 1. Ссылка на Шикимори
                 const targetApiUrl = 'https://shikimori.one/api/animes?limit=12&order=popularity';
-                // 2. Оборачиваем ее в прокси AllOrigins, чтобы браузер не блокировал запрос с github.io
                 const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetApiUrl);
                 
                 const response = await fetch(proxyUrl);
-                
-                if (!response.ok) throw new Error('Ошибка сети или прокси');
-                
                 const data = await response.json();
+                
                 const container = document.getElementById('anime-container');
                 container.innerHTML = ''; 
                 
                 data.forEach(anime => {
                     const card = document.createElement('div');
                     card.className = 'anime-card';
-                    
                     card.innerHTML = `
                         <img src="https://shikimori.one${anime.image.original}" alt="${anime.russian}">
                         <h3>${anime.russian || anime.name}</h3>
-                        <p>Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
+                        <p style="color: gray; font-size: 14px;">Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
                     `;
                     
                     card.addEventListener('click', () => {
@@ -129,24 +125,23 @@
                 });
             } catch (error) {
                 console.error('Ошибка:', error);
-                document.getElementById('anime-container').innerHTML = 
-                    `<p class="error-msg">Не удалось загрузить базу. Попробуй обновить страницу.</p>`;
+                document.getElementById('anime-container').innerHTML = '<p>Не удалось загрузить базу. Попробуй обновить страницу.</p>';
             }
         }
 
+        // Запуск плеера Collapse по клику
         function openPlayer(title, shikimoriId) {
             document.getElementById('modal-title').innerText = title;
             const player = document.getElementById('anime-player');
             
-            // Вставляем плеер Collapse, привязанный к ID с Шикимори
+            // Вставляем ссылку Collapse, которая сразу ищет видео по ID Шикимори
             player.src = `https://api.collapse.party/embed/anime/${shikimoriId}`;
             
             document.getElementById('player-modal').style.display = 'flex';
         }
 
         function closePlayer() {
-            const player = document.getElementById('anime-player');
-            player.src = ""; // Убиваем видео при закрытии окна
+            document.getElementById('anime-player').src = ""; 
             document.getElementById('player-modal').style.display = 'none';
         }
 
