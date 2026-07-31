@@ -10,7 +10,7 @@
             background: #121212;
             color: #ffffff;
             margin: 0;
-            padding: 40px;
+            padding: 20px;
             text-align: center;
         }
         h1 {
@@ -29,6 +29,11 @@
             width: 200px;
             padding: 15px;
             text-align: left;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .anime-card:hover {
+            transform: scale(1.05);
         }
         .anime-card img {
             width: 100%;
@@ -43,24 +48,69 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        /* Стили модального окна с плеером */
+        #player-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #ff6b6b;
+        }
+        iframe {
+            width: 100%;
+            height: 450px;
+            border: none;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
 
     <h1>Мой аниме-каталог</h1>
-    <p>Загрузка данных с Shikimori...</p>
+    <p>Нажмите на карточку аниме, чтобы открыть плеер</p>
     
-    <div id="anime-container"></div>
+    <div id="anime-container">Загрузка данных...</div>
+
+    <!-- Модальное окно плеера -->
+    <div id="player-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePlayer()">&times;</span>
+            <h2 id="modal-title">Название аниме</h2>
+            <!-- Сюда вставляется плеер. В примере ниже используется тестовое видео -->
+            <iframe id="anime-player" src="" allowfullscreen></iframe>
+        </div>
+    </div>
 
     <script>
-        // Функция для получения аниме через Shikimori API
         async function loadAnime() {
             try {
-                const response = await fetch('https://shikimori.me/api/animes?limit=10');
+                const response = await fetch('https://shikimori.me/api/animes?limit=12');
                 const data = await response.json();
                 
                 const container = document.getElementById('anime-container');
-                container.innerHTML = ''; // Очищаем текст загрузки
+                container.innerHTML = ''; 
                 
                 data.forEach(anime => {
                     const card = document.createElement('div');
@@ -70,11 +120,33 @@
                         <h3>${anime.russian || anime.name}</h3>
                         <p>Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
                     `;
+                    
+                    // Обработчик клика для открытия плеера
+                    card.addEventListener('click', () => {
+                        openPlayer(anime.russian || anime.name);
+                    });
+
                     container.appendChild(card);
                 });
             } catch (error) {
                 console.error('Ошибка при загрузке аниме:', error);
             }
+        }
+
+        function openPlayer(title) {
+            document.getElementById('modal-title').innerText = title;
+            
+            // В реальном проекте сюда подставляется ссылка на iframe с видеоплеером (например, от базы озвучки)
+            // Для примера используем публичный видеофайл:
+            document.getElementById('anime-player').src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+            
+            document.getElementById('player-modal').style.display = 'flex';
+        }
+
+        function closePlayer() {
+            document.getElementById('player-modal').style.display = 'none';
+            // Останавливаем видео при закрытии модального окна
+            document.getElementById('anime-player').src = "";
         }
 
         loadAnime();
