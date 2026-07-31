@@ -1,1 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой аниме-сайт</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: #ff6b6b;
+        }
+        #anime-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .anime-card {
+            background: #1e1e1e;
+            border-radius: 8px;
+            width: 200px;
+            padding: 15px;
+            text-align: left;
+        }
+        .anime-card img {
+            width: 100%;
+            border-radius: 4px;
+            height: 280px;
+            object-fit: cover;
+        }
+        .anime-card h3 {
+            font-size: 16px;
+            margin: 10px 0 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
 
+    <h1>Мой аниме-каталог</h1>
+    <p>Загрузка данных с Shikimori...</p>
+    
+    <div id="anime-container"></div>
+
+    <script>
+        // Функция для получения аниме через Shikimori API
+        async function loadAnime() {
+            try {
+                const response = await fetch('https://shikimori.me/api/animes?limit=10');
+                const data = await response.json();
+                
+                const container = document.getElementById('anime-container');
+                container.innerHTML = ''; // Очищаем текст загрузки
+                
+                data.forEach(anime => {
+                    const card = document.createElement('div');
+                    card.className = 'anime-card';
+                    card.innerHTML = `
+                        <img src="https://shikimori.me${anime.image.original}" alt="${anime.russian}">
+                        <h3>${anime.russian || anime.name}</h3>
+                        <p>Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Ошибка при загрузке аниме:', error);
+            }
+        }
+
+        loadAnime();
+    </script>
+
+</body>
+</html>
