@@ -48,7 +48,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        /* Стили модального окна с плеером */
         #player-modal {
             display: none;
             position: fixed;
@@ -77,12 +76,12 @@
             cursor: pointer;
             color: #ff6b6b;
         }
-        iframe {
+        video {
             width: 100%;
-            height: 450px;
-            border: none;
+            max-height: 450px;
             border-radius: 6px;
             margin-top: 15px;
+            outline: none;
         }
     </style>
 </head>
@@ -93,13 +92,17 @@
     
     <div id="anime-container">Загрузка данных...</div>
 
-    <!-- Модальное окно плеера -->
+    <!-- Модальное окно с HTML5 плеером -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
-            <!-- Сюда вставляется плеер. В примере ниже используется тестовое видео -->
-            <iframe id="anime-player" src="" allowfullscreen></iframe>
+            
+            <!-- Встроенный HTML5 плеер -->
+            <video id="anime-player" controls>
+                <source src="" type="video/mp4">
+                Ваш браузер не поддерживает видео.
+            </video>
         </div>
     </div>
 
@@ -121,9 +124,11 @@
                         <p>Год: ${anime.aired_on ? anime.aired_on.slice(0, 4) : 'Н/Д'}</p>
                     `;
                     
-                    // Обработчик клика для открытия плеера
                     card.addEventListener('click', () => {
-                        openPlayer(anime.russian || anime.name);
+                        // Здесь можно указать прямую ссылку на видеофайл для каждого аниме
+                        // Для примера используется тестовое публичное видео
+                        const sampleVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+                        openPlayer(anime.russian || anime.name, sampleVideoUrl);
                     });
 
                     container.appendChild(card);
@@ -133,20 +138,22 @@
             }
         }
 
-        function openPlayer(title) {
+        function openPlayer(title, videoUrl) {
             document.getElementById('modal-title').innerText = title;
             
-            // В реальном проекте сюда подставляется ссылка на iframe с видеоплеером (например, от базы озвучки)
-            // Для примера используем публичный видеофайл:
-            document.getElementById('anime-player').src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+            const player = document.getElementById('anime-player');
+            player.src = videoUrl;
+            player.load();
             
             document.getElementById('player-modal').style.display = 'flex';
         }
 
         function closePlayer() {
+            const player = document.getElementById('anime-player');
+            player.pause();
+            player.src = "";
+            
             document.getElementById('player-modal').style.display = 'none';
-            // Останавливаем видео при закрытии модального окна
-            document.getElementById('anime-player').src = "";
         }
 
         loadAnime();
