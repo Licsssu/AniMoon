@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой аниме-сайт</title>
+    <title>Мой аниме-сайт (Anilibria)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,9 +13,7 @@
             padding: 20px;
             text-align: center;
         }
-        h1 {
-            color: #ff6b6b;
-        }
+        h1 { color: #ff6b6b; }
         #anime-container {
             display: flex;
             flex-wrap: wrap;
@@ -32,9 +30,7 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-        .anime-card:hover {
-            transform: scale(1.05);
-        }
+        .anime-card:hover { transform: scale(1.05); }
         .anime-card img {
             width: 100%;
             border-radius: 4px;
@@ -51,11 +47,8 @@
         #player-modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -70,86 +63,88 @@
         }
         .close-btn {
             position: absolute;
-            top: 10px;
-            right: 15px;
+            top: 10px; right: 15px;
             font-size: 24px;
             cursor: pointer;
             color: #ff6b6b;
         }
-        /* Стили для iframe плеера */
         iframe {
             width: 100%;
             height: 500px;
             border: none;
             border-radius: 6px;
             margin-top: 15px;
+            background: #000;
         }
     </style>
 </head>
 <body>
 
-    <h1>Мой аниме-каталог</h1>
+    <h1>Мои любимые релизы (Anilibria)</h1>
     <p>Нажмите на карточку аниме, чтобы открыть плеер</p>
     
-    <div id="anime-container">Загрузка данных...</div>
+    <div id="anime-container">Загрузка данных с Анилибрии...</div>
 
-    <!-- Модальное окно с iframe плеером -->
+    <!-- Модальное окно с плеером Анилибрии -->
     <div id="player-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <h2 id="modal-title">Название аниме</h2>
-            
-            <!-- Сюда подгружается плеер сторонней базы (например, Kodik) -->
+            <!-- Сюда подгрузится реальный плеер -->
             <iframe id="anime-player" src="" allowfullscreen></iframe>
         </div>
     </div>
 
-<script>
+    <script>
         async function loadAnime() {
             try {
-                // Используем открытое Jikan API (база MyAnimeList), которое не блокирует запросы
-                const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=12');
-                const result = await response.json();
-                const data = result.data; // Jikan отдает массив внутри объекта data
+                // Запрашиваем 12 последних обновленных тайтлов с Анилибрии
+                const response = await fetch('https://api.anilibria.tv/v3/title/updates?limit=12');
+                const data = await response.json();
+                const animeList = data.list; 
                 
                 const container = document.getElementById('anime-container');
                 container.innerHTML = ''; 
                 
-                data.forEach(anime => {
+                animeList.forEach(anime => {
                     const card = document.createElement('div');
                     card.className = 'anime-card';
+                    
+                    // Анилибрия отдает неполную ссылку на картинку, собираем ее:
+                    const posterUrl = `https://anilibria.tv${anime.posters.original.url}`;
+                    
                     card.innerHTML = `
-                        <img src="${anime.images.jpg.large_image_url}" alt="${anime.title}">
-                        <h3>${anime.title}</h3>
-                        <p>Год: ${anime.year || 'Н/Д'}</p>
+                        <img src="${posterUrl}" alt="${anime.names.ru}">
+                        <h3>${anime.names.ru}</h3>
                     `;
                     
                     card.addEventListener('click', () => {
-                        // Передаем название и ID от MyAnimeList
-                        openPlayer(anime.title, anime.mal_id);
+                        // Передаем название и уникальный ID аниме для плеера
+                        openPlayer(anime.names.ru, anime.id);
                     });
 
                     container.appendChild(card);
                 });
             } catch (error) {
-                console.error('Ошибка при загрузке аниме:', error);
-                document.getElementById('anime-container').innerHTML = '<p style="color: red;">Ошибка при загрузке данных. Проверьте консоль.</p>';
+                console.error('Ошибка:', error);
+                document.getElementById('anime-container').innerHTML = 
+                    '<p style="color:#ff6b6b;">Ошибка загрузки. Включи VPN, возможно провайдер блокирует Анилибрию!</p>';
             }
         }
 
         function openPlayer(title, animeId) {
             document.getElementById('modal-title').innerText = title;
-            
             const player = document.getElementById('anime-player');
-            // Тестовый плеер заглушка. Позже мы привяжем сюда Kodik!
-            player.src = `https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1`;
+            
+            // Вставляем родной iframe-плеер Анилибрии
+            player.src = `https://anilibria.tv/public/iframe.php?id=${animeId}`;
             
             document.getElementById('player-modal').style.display = 'flex';
         }
 
         function closePlayer() {
             const player = document.getElementById('anime-player');
-            player.src = ""; 
+            player.src = ""; // Выключаем звук/видео при закрытии
             document.getElementById('player-modal').style.display = 'none';
         }
 
